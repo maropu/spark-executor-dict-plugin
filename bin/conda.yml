@@ -9,3 +9,6 @@ dependencies:
   - pyarrow=1.0.0
   - grpcio=1.35.0
   - grpcio-tools=1.35.0
+  - mypy=0.790
+  - flake8=3.8.4
+

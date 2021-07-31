@@ -45,6 +45,7 @@
     <spark.binary.version>3.0</spark.binary.version>
     <hadoop.version>2.7.4</hadoop.version>
     <hadoop.binary.version>2.7</hadoop.binary.version>
+    <guava.version>14.0.1</guava.version>
     <mapdb.version>3.0.8</mapdb.version>
     <grpc.version>1.39.0</grpc.version>
     <scalatest.version>3.0.8</scalatest.version>
@@ -82,10 +83,17 @@
       <version>${spark.version}</version>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>org.mapdb</groupId>
       <artifactId>mapdb</artifactId>
       <version>${mapdb.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>${guava.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -468,6 +476,22 @@
                   </excludes>
                 </filter>
               </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>exec-maven-plugin</artifactId>
+        <groupId>org.codehaus.mojo</groupId>
+        <executions>
+          <execution><!-- Run our version calculation script -->
+            <id>Python Packaging</id>
+            <phase>package</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${basedir}/bin/package-python.sh</executable>
             </configuration>
           </execution>
         </executions>
