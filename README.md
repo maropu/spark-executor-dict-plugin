@@ -68,6 +68,7 @@ scala> MapDbConverter.save("/tmp/largeMap.db", largeMap)
 
 ## TODO
 
+ * Report some metrics via `MetricRegistry`
  * Adds benchmark scripts
  * Supports Spark v3.1
  * Adds more tests
