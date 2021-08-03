@@ -35,23 +35,20 @@ object DictPluginConf {
   val EXECUTOR_DICT_MAP_CACHE_SIZE = "spark.plugins.executorDict.mapCacheSize"
 }
 
-object SparkExecutorDictPlugin {
+object SparkExecutorDictPlugin extends Logging {
   val DEFAULT_PORT = "6543"
   val MAP_CACHE_SIZE = "10000"
-}
 
-class SparkExecutorDictPlugin extends SparkPlugin with Logging {
-
-  override def driverPlugin(): DriverPlugin = {
-    new DriverPlugin {
-      override def init(sc: SparkContext, ctx: PluginContext): util.Map[String, String] = {
-        val dbPath = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_DB_FILE, "")
-        val port = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_PORT, "6543")
-        val mapCacheSize = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_MAP_CACHE_SIZE, "10000")
-        import collection.JavaConverters._
-        Map("dbPath" -> dbPath, "port" -> port, "mapCacheSize" -> mapCacheSize).asJava
-      }
+  private def getDbPathFromSparkFiles(): String = {
+    val files = new File(SparkFiles.getRootDirectory())
+    val dbFile = files.listFiles.filter(_.getName.endsWith(".db"))
+    if (dbFile.length == 0) {
+      throw new RuntimeException("No db file found")
+    } else if (dbFile.length > 1) {
+      throw new RuntimeException(
+        s"Multiple db files found: ${dbFile.map(_.getName).mkString(",")}")
     }
+    dbFile.head.getAbsolutePath
   }
 
   private def openAndGetMap(dbPath: String): String => String = try {
@@ -70,16 +67,34 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
       throw new RuntimeException(s"Cannot open a specified database: $dbPath")
   }
 
-  private def getDbPathFromSparkFiles(): String = {
-    val files = new File(SparkFiles.getRootDirectory())
-    val dbFile = files.listFiles.filter(_.getName.endsWith(".db"))
-    if (dbFile.length == 0) {
-      throw new RuntimeException("No db file found")
-    } else if (dbFile.length > 1) {
-      throw new RuntimeException(
-        s"Multiple db files found: ${dbFile.map(_.getName).mkString(",")}")
+  private[plugin] def initRpcServ(conf: util.Map[String, String]): DictServer = {
+    val port = conf.get("port")
+    val cacheSize = conf.get("mapCacheSize")
+    val dbPath = {
+      val path = conf.get("dbPath")
+      if (path.isEmpty) {
+        getDbPathFromSparkFiles()
+      } else {
+        path
+      }
     }
-    dbFile.head.getAbsolutePath
+    logInfo(s"port=$port dbPath=$dbPath mapCacheSize=$cacheSize")
+    new DictServer(port.toInt, openAndGetMap(dbPath), cacheSize.toInt)
+  }
+}
+
+class SparkExecutorDictPlugin extends SparkPlugin with Logging {
+
+  override def driverPlugin(): DriverPlugin = {
+    new DriverPlugin {
+      override def init(sc: SparkContext, ctx: PluginContext): util.Map[String, String] = {
+        val dbPath = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_DB_FILE, "")
+        val port = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_PORT, "6543")
+        val mapCacheSize = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_MAP_CACHE_SIZE, "10000")
+        import collection.JavaConverters._
+        Map("dbPath" -> dbPath, "port" -> port, "mapCacheSize" -> mapCacheSize).asJava
+      }
+    }
   }
 
   override def executorPlugin(): ExecutorPlugin = {
@@ -87,23 +102,15 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
       var rpcServ: DictServer = _
 
       override def init(ctx: PluginContext, extraConf: util.Map[String, String]): Unit = {
-        val port = extraConf.get("port")
-        val cacheSize = extraConf.get("mapCacheSize")
-        val dbPath = {
-          val path = extraConf.get("dbPath")
-          if (path.isEmpty) {
-            getDbPathFromSparkFiles()
-          } else {
-            path
-          }
-        }
-        logInfo(s"port=$port dbPath=$dbPath mapCacheSize=$cacheSize")
-        rpcServ = new DictServer(port.toInt, openAndGetMap(dbPath), cacheSize.toInt)
+        rpcServ = SparkExecutorDictPlugin.initRpcServ(extraConf)
         super.init(ctx, extraConf)
       }
 
-      override def shutdown(): Unit = {
+      override def shutdown(): Unit = try {
         rpcServ.shutdown()
+      } catch {
+        case NonFatal(e) =>
+          logWarning(s"Cannot shutdown gracefully because: ${e.getMessage}")
       }
     }
   }

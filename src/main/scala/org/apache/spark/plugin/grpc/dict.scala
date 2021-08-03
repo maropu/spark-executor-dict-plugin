@@ -65,13 +65,18 @@ class DictServer private(serv: Server) extends Logging {
       .build())
   }
 
-  def shutdown(): Unit = serv.shutdownNow()
+  def shutdown(): Unit = {
+    serv.shutdown().awaitTermination()
+    assert(serv.isTerminated)
+  }
 }
 
 class DictClient private(
     stub: DictBlockingStub,
     numRetries: Int,
     errorOnRpcFailure: Boolean) extends Logging {
+
+  stub.withWaitForReady()
 
   def this(
       port: Int = SparkExecutorDictPlugin.DEFAULT_PORT.toInt,
