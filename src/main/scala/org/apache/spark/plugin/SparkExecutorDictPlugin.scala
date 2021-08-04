@@ -39,7 +39,8 @@ object DictPluginConf {
 
 object SparkExecutorDictPlugin extends Logging {
   val DEFAULT_PORT = "6543"
-  val MAP_CACHE_SIZE = "10000"
+  val DEFAULT_MAP_CACHE_SIZE = "10000"
+  val DEFAULT_MAP_CACHE_CONCURRENCY_LV = "8"
 
   private def getDbPathFromSparkFiles(): String = {
     val files = new File(SparkFiles.getRootDirectory())
@@ -92,10 +93,13 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
     new DriverPlugin {
       override def init(sc: SparkContext, ctx: PluginContext): util.Map[String, String] = {
         val dbPath = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_DB_FILE, "")
-        val port = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_PORT, "6543")
-        val mapCacheSize = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_MAP_CACHE_SIZE, "10000")
+        val port = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_PORT,
+          SparkExecutorDictPlugin.DEFAULT_PORT)
+        val mapCacheSize = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_MAP_CACHE_SIZE,
+          SparkExecutorDictPlugin.DEFAULT_MAP_CACHE_SIZE)
         val mapCacheConcurrencyLv = sc.getConf.get(
-          DictPluginConf.EXECUTOR_DICT_MAP_CACHE_CONCURRENCY_LEVEL, "8")
+          DictPluginConf.EXECUTOR_DICT_MAP_CACHE_CONCURRENCY_LEVEL,
+          SparkExecutorDictPlugin.DEFAULT_MAP_CACHE_CONCURRENCY_LV)
         import collection.JavaConverters._
         Map(
           "dbPath" -> dbPath,
