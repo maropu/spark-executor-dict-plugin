@@ -68,7 +68,7 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     val map = keyValues.toMap
     var rpcServ: DictServer = null
     try {
-      rpcServ = new DictServer(6543, (key: String) => map.getOrElse(key, ""), 10)
+      rpcServ = new DictServer(6543, (key: String) => map.getOrElse(key, ""), 10, 1)
       val threads = keyValues.map { case (k, expected) =>
         val t = new Thread() {
           override def run(): Unit = {
@@ -96,7 +96,7 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     var client1: DictClient = null
     var client2: DictClient = null
     try {
-      rpcServ = new DictServer(6543, (key: String) => map.getOrElse(key, ""), 10)
+      rpcServ = new DictServer(6543, (key: String) => map.getOrElse(key, ""), 10, 1)
       client1 = new DictClient(6543, numRetries = 1, errorOnRpcFailure = false)
       client2 = new DictClient(6543, numRetries = 1, errorOnRpcFailure = true)
       rpcServ.shutdown()

@@ -46,14 +46,20 @@ object DictServiceBenchmark extends BenchmarkBase {
       nThreads: Int = 1,
       refRatio: Double = 1.0,
       numKeys: Int,
-      mapCacheSize: Int): Unit = {
+      mapCacheSize: Int,
+      mapCacheConcurrencyLv: Int = 8): Unit = {
     var rpcServ: DictServer = null
     val data = (0 until numKeys).map { i => s"$i" -> Random.nextInt(10000).toString }.toMap
     val tempDir = Utils.createTempDir()
     val dbPath = s"${tempDir.getAbsolutePath}/test.db"
     MapDbConverter.save(dbPath, data)
     try {
-      val conf = Map("dbPath" -> dbPath, "port" -> "6543", "mapCacheSize" -> mapCacheSize.toString)
+      val conf = Map(
+        "dbPath" -> dbPath,
+        "port" -> "6543",
+        "mapCacheSize" -> mapCacheSize.toString,
+        "mapCacheConcurrencyLv" -> mapCacheConcurrencyLv.toString
+      )
       rpcServ = SparkExecutorDictPlugin.initRpcServ(conf.asJava)
       val dbSize = new File(dbPath).length
       val benchmark = new Benchmark(
@@ -95,5 +101,9 @@ object DictServiceBenchmark extends BenchmarkBase {
     test(numIters = 100000, nThreads = 4, numKeys = 3000000, mapCacheSize = 1)
     test(numIters = 100000, refRatio = 0.0001, numKeys = 3000000, mapCacheSize = 1)
     test(numIters = 100000, refRatio = 0.0001, numKeys = 3000000, mapCacheSize = 1000)
+    test(numIters = 100000, nThreads = 8, numKeys = 3000000, mapCacheSize = 1,
+      mapCacheConcurrencyLv = 1)
+    test(numIters = 100000, nThreads = 8, numKeys = 3000000, mapCacheSize = 1,
+      mapCacheConcurrencyLv = 8)
   }
 }

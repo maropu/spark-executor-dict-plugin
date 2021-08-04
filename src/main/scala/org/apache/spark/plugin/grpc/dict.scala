@@ -17,9 +17,11 @@
 
 package org.apache.spark.plugin.grpc
 
+import java.util.concurrent.{Executors, TimeUnit}
+
 import scala.util.control.NonFatal
 
-import com.google.common.cache.{CacheBuilder, CacheLoader}
+import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import io.grpc.{ManagedChannelBuilder, Server, ServerBuilder}
 import io.grpc.stub.StreamObserver
 
@@ -27,24 +29,35 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.plugin.SparkExecutorDictPlugin
 import org.apache.spark.plugin.grpc.DictGrpc._
 
-class DictService(map: String => String, cacheSize: Int)
-  extends DictImplBase {
+class DictService(map: String => String, cacheSize: Int, cacheConcurrencyLv: Int)
+  extends DictImplBase with Logging {
 
   // Guava cache should be thread-safe:
   // https://guava.dev/releases/21.0/api/docs/com/google/common/cache/LoadingCache.html
-  val cache = CacheBuilder.newBuilder()
+  val cache: LoadingCache[String, ValueReply] = CacheBuilder.newBuilder()
+    .initialCapacity(cacheSize)
     .maximumSize(cacheSize)
+    .concurrencyLevel(cacheConcurrencyLv)
+    .recordStats()
     .build(
       new CacheLoader[String, ValueReply]() {
         override def load(key: String): ValueReply = {
-          val value = map(key)
-          if (value != null) {
-            ValueReply.newBuilder().setValue(value).build()
-          } else {
-            ValueReply.newBuilder().setValue("").build()
-          }
+          val maybeValue = map(key)
+          val value = if (maybeValue != null) maybeValue else ""
+          ValueReply.newBuilder().setValue(value).build()
         }
       })
+
+  Executors.newSingleThreadScheduledExecutor()
+      .scheduleWithFixedDelay(new Runnable {
+    override def run(): Unit = logInfo(cacheStats())
+  }, 10L, 10L, TimeUnit.MINUTES)
+
+  // TODO: Needs to send the stats into driver-side metric system
+  def cacheStats(): String = {
+    s"hitRate=${cache.stats().hitRate()} missRate=${cache.stats().hitRate()} " +
+      s"requestCnt=${cache.stats().requestCount()}"
+  }
 
   override def lookup(req: LookupRequest, resObs: StreamObserver[ValueReply]): Unit = {
     val responseValue = cache.get(req.getKey())
@@ -53,21 +66,27 @@ class DictService(map: String => String, cacheSize: Int)
   }
 }
 
-class DictServer private(serv: Server) extends Logging {
+class DictServer private(serv: Server, service: DictService) extends Logging {
   serv.start()
   logInfo(s"${this.getClass.getSimpleName} started, listening on ${serv.getPort}")
 
-  def this(port: Int, map: String => String, cacheSize: Int) = {
+  def this(port: Int, service: DictService) = {
     this(ServerBuilder
       .forPort(port)
-      .addService(new DictService(map, cacheSize))
+      .addService(service)
       .asInstanceOf[ServerBuilder[_]]
-      .build())
+      .build(),
+      service)
+  }
+
+  def this(port: Int, map: String => String, cacheSize: Int, cacheConcurrencyLv: Int) = {
+    this(port, new DictService(map, cacheSize, cacheConcurrencyLv))
   }
 
   def shutdown(): Unit = {
-    serv.shutdown().awaitTermination()
-    assert(serv.isTerminated)
+    logInfo(service.cacheStats())
+    val isTerminated = serv.shutdown().awaitTermination(10L, TimeUnit.SECONDS)
+    assert(isTerminated)
   }
 }
 

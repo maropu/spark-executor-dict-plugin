@@ -33,6 +33,8 @@ object DictPluginConf {
   val EXECUTOR_DICT_DB_FILE = "spark.plugins.executorDict.dbFile"
   val EXECUTOR_DICT_PORT = "spark.plugins.executorDict.port"
   val EXECUTOR_DICT_MAP_CACHE_SIZE = "spark.plugins.executorDict.mapCacheSize"
+  val EXECUTOR_DICT_MAP_CACHE_CONCURRENCY_LEVEL =
+    "spark.plugins.executorDict.mapCacheConcurrencyLv"
 }
 
 object SparkExecutorDictPlugin extends Logging {
@@ -68,8 +70,9 @@ object SparkExecutorDictPlugin extends Logging {
   }
 
   private[plugin] def initRpcServ(conf: util.Map[String, String]): DictServer = {
-    val port = conf.get("port")
-    val cacheSize = conf.get("mapCacheSize")
+    val port = conf.get("port").toInt
+    val cacheSize = conf.get("mapCacheSize").toInt
+    val cacheConcurrencyLv = conf.get("mapCacheConcurrencyLv").toInt
     val dbPath = {
       val path = conf.get("dbPath")
       if (path.isEmpty) {
@@ -79,7 +82,7 @@ object SparkExecutorDictPlugin extends Logging {
       }
     }
     logInfo(s"port=$port dbPath=$dbPath mapCacheSize=$cacheSize")
-    new DictServer(port.toInt, openAndGetMap(dbPath), cacheSize.toInt)
+    new DictServer(port, openAndGetMap(dbPath), cacheSize, cacheConcurrencyLv)
   }
 }
 
@@ -91,8 +94,15 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
         val dbPath = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_DB_FILE, "")
         val port = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_PORT, "6543")
         val mapCacheSize = sc.getConf.get(DictPluginConf.EXECUTOR_DICT_MAP_CACHE_SIZE, "10000")
+        val mapCacheConcurrencyLv = sc.getConf.get(
+          DictPluginConf.EXECUTOR_DICT_MAP_CACHE_CONCURRENCY_LEVEL, "8")
         import collection.JavaConverters._
-        Map("dbPath" -> dbPath, "port" -> port, "mapCacheSize" -> mapCacheSize).asJava
+        Map(
+          "dbPath" -> dbPath,
+          "port" -> port,
+          "mapCacheSize" -> mapCacheSize,
+          "mapCacheConcurrencyLv" -> mapCacheConcurrencyLv
+        ).asJava
       }
     }
   }
