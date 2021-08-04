@@ -63,8 +63,8 @@ object DictServiceBenchmark extends BenchmarkBase {
       rpcServ = SparkExecutorDictPlugin.initRpcServ(conf.asJava)
       val dbSize = new File(dbPath).length
       val benchmark = new Benchmark(
-        s"lookup(n=$numIters,nThreads=$nThreads,dbSize=$dbSize,nKeys=$numKeys," +
-          s"refRatio=$refRatio,nCache=$mapCacheSize)",
+        s"lookup(n=$numIters,nThreads=$nThreads,dbSize=$dbSize,nKeys=$numKeys,refRatio=$refRatio," +
+          s"nCache=$mapCacheSize,cacheCcLv=$mapCacheConcurrencyLv)",
         numIters, output = output)
       benchmark.addCase(s"grpc.dict") { _: Int =>
         val dict = new DictClient(port = 6543)
@@ -97,13 +97,17 @@ object DictServiceBenchmark extends BenchmarkBase {
   override def runBenchmarkSuite(mainArgs: Array[String]): Unit = {
     test(numIters = 100000, numKeys = 100, mapCacheSize = 1)
     test(numIters = 100000, numKeys = 100, mapCacheSize = 100)
-    test(numIters = 100000, nThreads = 1, numKeys = 3000000, mapCacheSize = 1)
-    test(numIters = 100000, nThreads = 4, numKeys = 3000000, mapCacheSize = 1)
+    test(numIters = 100000, nThreads = 1, numKeys = 3000000, mapCacheSize = 1,
+      mapCacheConcurrencyLv = 16)
+    test(numIters = 100000, nThreads = 4, numKeys = 3000000, mapCacheSize = 1,
+      mapCacheConcurrencyLv = 16)
+    test(numIters = 100000, nThreads = 8, numKeys = 3000000, mapCacheSize = 1,
+      mapCacheConcurrencyLv = 16)
+    test(numIters = 100000, nThreads = 16, numKeys = 3000000, mapCacheSize = 1,
+      mapCacheConcurrencyLv = 16)
+    test(numIters = 100000, nThreads = 16, numKeys = 3000000, mapCacheSize = 1,
+      mapCacheConcurrencyLv = 1)
     test(numIters = 100000, refRatio = 0.0001, numKeys = 3000000, mapCacheSize = 1)
     test(numIters = 100000, refRatio = 0.0001, numKeys = 3000000, mapCacheSize = 1000)
-    test(numIters = 100000, nThreads = 8, numKeys = 3000000, mapCacheSize = 1,
-      mapCacheConcurrencyLv = 1)
-    test(numIters = 100000, nThreads = 8, numKeys = 3000000, mapCacheSize = 1,
-      mapCacheConcurrencyLv = 8)
   }
 }
