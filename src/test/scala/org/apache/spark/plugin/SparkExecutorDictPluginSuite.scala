@@ -17,6 +17,12 @@
 
 package org.apache.spark.plugin
 
+import java.io.File
+
+import scala.collection.JavaConverters._
+
+import io.github.maropu.MapDbConverter
+
 import org.apache.spark.{LocalSparkContext, SparkConf, SparkContext, SparkFunSuite}
 import org.apache.spark.api.plugin.ExecutorPlugin
 import org.apache.spark.launcher.SparkLauncher
@@ -127,6 +133,17 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     assert(errMsg.contains("Cannot open a specified database"))
   }
 
+  // scalastyle:off line.size.limit
+  /**
+   * TODO: Unexpected exception thrown like this:
+   * java.io.FileNotFoundException: File file:/Users/maropu/Repositories/spark/spark-executor-dict-plugin/target/scala-2.12/test-classes/invalid.db} does not exist
+   *   at org.apache.hadoop.fs.RawLocalFileSystem.deprecatedGetFileStatus(RawLocalFileSystem.java:611)
+   *   at org.apache.hadoop.fs.RawLocalFileSystem.getFileLinkStatusInternal(RawLocalFileSystem.java:824)
+   *   org.apache.hadoop.fs.RawLocalFileSystem.getFileStatus(RawLocalFileSystem.java:601)
+   *   at org.apache.hadoop.fs.FilterFileSystem.getFileStatus(FilterFileSystem.java:428)
+   *   ...
+   */
+  // scalastyle:on line.size.limit
   ignore("Multiple database files") {
     val files = s"${resourcePath("test.db")},${resourcePath("invalid.db")}}"
     val conf = new SparkConf()
@@ -185,6 +202,36 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     assert(client.lookup("2") === "b")
     assert(client.lookup("3") === "c")
     assert(client.lookup("4") === "")
+  }
+
+  ignore("large db file, sequential access") {
+    withTempDir { tempDir =>
+      val numKeys = 10000000
+      val data = (0 until numKeys).map { i => s"$i" -> "abcdefghijklmn" }.toMap
+      val dbPath = s"${tempDir.getAbsolutePath}/test.db"
+      MapDbConverter.save(dbPath, data)
+
+      val dbSize = new File(dbPath).length
+      val maxMem = Runtime.getRuntime.maxMemory
+      assert(maxMem < dbSize)
+
+      var rpcServ: DictServer = null
+      try {
+        val conf = Map("dbPath" -> dbPath, "port" -> "6543", "mapCacheSize" -> "1",
+          "mapCacheConcurrencyLv" -> "8")
+        rpcServ = SparkExecutorDictPlugin.initRpcServ(conf.asJava)
+        val dict = new DictClient()
+        (0 until 3).foreach { _ =>
+          (0 until numKeys).foreach { i =>
+            assert(dict.lookup(s"$i") === "abcdefghijklmn")
+          }
+        }
+      } finally {
+        if (rpcServ != null) {
+          rpcServ.shutdown()
+        }
+      }
+    }
   }
 }
 
