@@ -65,11 +65,6 @@ A RPC server holds a shared state as an on-disk hash map that [MapDB](https://ma
 Therefore, frequently-accessed key-value pairs are expected to be on memory and the memory footprint can be small.
 For actual running examples, please see [test code](./python/tests/test_dict.py).
 
-Note: if Spark fails with `NoClassDefFoundError` or `NoSuchMethodError`, please make sure
-the versions of the libraries from Google (e.g., gRPC, Protocol Buffers, Guava)
-are matched between Spark and this plugin. If not, you may have to replace jar files
-or rebuild Spark and/or this plugin to align their versions.
-
 ## MapDB data conversion
 
 To generate a MapDB's map file for your data, you can use a helper function included in the package:
