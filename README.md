@@ -6,15 +6,24 @@ There is the use case where a user wants to compute values in a map task by refe
 If a shared state is small, a broadcast variable is a good fit for the case as follows:
 
 ```
+>>> from pyspark.sql.functions import udf
 >>> broadcasted_hmap = spark.sparkContext.broadcast({"key1": "value1", "key2": "value2", ...})
->>> @udf(returnType='double')
+>>> @udf(returnType='string')
 ... def udf(x):
 ...     hmap = broadcasted_hmap.value
-...     value = ...  # Computes a value by referring to the broadcasted dict like 'hmap[key]'
+...     value = ...  # Computes a value by referring to the broadcasted dict like 'hmap[x]'
 ...     return value
-
->>> df = df.select(udf(col("x")))
+...
+>>> import pandas as pd
+>>> df = spark.createDataFrame(pd.DataFrame({'x': ['key1', 'key2']}))
+>>> df = df.select(udf("x"))
 >>> df.show()
++------+
+|udf(x)|
++------+
+|value1|
+|value2|
++------+
 ```
 
 Having a copied state on each task's memory, however, can be wasteful if the state is pretty big (e.g., 10g or more).
@@ -22,24 +31,34 @@ To mitigate the issue, this plugin enables a user to spin up a RPC server along 
 the RPC server will return values associated with keys by referring to a specified state.
 Since all map tasks in an executor access the same shared state in a RPC server,
 the memory consumption is much smaller than that of broadcast variables.
-How a user accesses a shared state via a PRC server is as follows:
+How a user accesses a shared state via a RPC server is as follows:
 
 ```
 # 'largeMap.db' is a MapDB file-backed hash map implementation, https://mapdb.org
 $ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.0-0.1.0-SNAPSHOT-with-dependencies.jar \
+  --py-files ./assembly/dict.zip \
   --conf spark.plugins=org.apache.spark.plugin.SparkExecutorDictPlugin \
   --conf spark.files=/tmp/largeMap.db
 
->>> @udf(returnType='double')
+>>> from pyspark.sql.functions import udf
+>>> @udf(returnType='string')
 ... def udf(x):
 ...     from client import DictClient
-...     hamap = DictClient()
+...     hmap = DictClient()
 ...     value = ...  # Computes a value by talking to an executor-attached RPC map server
-...                  # like 'hmap.lookup(key)'
+...                  # like 'hmap.lookup(x)'
 ...     return value
-
->>> df = df.select(udf(col("x")))
+...
+>>> import pandas as pd
+>>> df = spark.createDataFrame(pd.DataFrame({'x': ['key1', 'key2']}))
+>>> df = df.select(udf("x"))
 >>> df.show()
++------+
+|udf(x)|
++------+
+|value1|
+|value2|
++------+
 ```
 
 A RPC server holds a shared state as an on-disk hash map that [MapDB](https://mapdb.org) provides.
