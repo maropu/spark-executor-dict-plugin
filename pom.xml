@@ -41,14 +41,14 @@
     <maven.version>3.6.3</maven.version>
     <scala.version>2.12.10</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
-    <spark.version>3.0.3</spark.version>
-    <spark.binary.version>3.0</spark.binary.version>
+    <spark.version>3.1.2</spark.version>
+    <spark.binary.version>3.1</spark.binary.version>
     <hadoop.version>2.7.4</hadoop.version>
     <hadoop.binary.version>2.7</hadoop.binary.version>
-    <guava.version>14.0.1</guava.version>
+    <guava.version>30.1.1-jre</guava.version>
     <mapdb.version>3.0.8</mapdb.version>
     <grpc.version>1.39.0</grpc.version>
-    <scalatest.version>3.0.8</scalatest.version>
+    <scalatest.version>3.2.3</scalatest.version>
 
     <test.java.home>${java.home}</test.java.home>
     <spark.test.home>${session.executionRootDirectory}</spark.test.home>
@@ -450,7 +450,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>2.3</version>
+        <version>3.2.4</version>
           <executions>
             <execution>
             <id>jar-with-dependencies</id>
@@ -476,6 +476,16 @@
                   </excludes>
                 </filter>
               </filters>
+              <relocations>
+                <relocation>
+                  <pattern>com</pattern>
+                  <shadedPattern>repackaged.com.google.common</shadedPattern>
+                  <includes>
+                    <include>com.google.common.**</include>
+                    <include>com.google.protobuf.**</include>
+                  </includes>
+                </relocation>
+              </relocations>
             </configuration>
           </execution>
         </executions>
@@ -484,7 +494,17 @@
         <artifactId>exec-maven-plugin</artifactId>
         <groupId>org.codehaus.mojo</groupId>
         <executions>
-          <execution><!-- Run our version calculation script -->
+          <execution>
+            <id>Scala Packaging</id>
+            <phase>package</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${basedir}/bin/package-scala.sh</executable>
+            </configuration>
+          </execution>
+          <execution>
             <id>Python Packaging</id>
             <phase>package</phase>
             <goals>

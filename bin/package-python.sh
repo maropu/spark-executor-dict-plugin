@@ -31,7 +31,7 @@ cd ${ROOT_DIR}/python
 find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf || true
 
 # Package the Python codes
-zip -j -r dict.zip . 2>&1 >/dev/null && mv dict.zip ${ROOT_DIR}/assembly
+zip -r dict.zip . 2>&1 >/dev/null && mv dict.zip ${ROOT_DIR}/assembly
 
 echo "Packaged the Python codes in ${ROOT_DIR}/assembly/dict.zip"
 

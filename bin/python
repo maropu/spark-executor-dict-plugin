@@ -71,6 +71,5 @@ PYTHONPATH="${ROOT_DIR}/python" \
 PYTHONSTARTUP="${ROOT_DIR}/bin/.startup.py" \
 exec pyspark --jars=${PACKAGE} \
   --conf spark.plugins=org.apache.spark.plugin.SparkExecutorDictPlugin \
-  --conf spark.executor.userClassPathFirst=true \
   $(join_by " " ${SPARK_CONF[@]}) \
   $(join_by " " ${ARGS[@]})
