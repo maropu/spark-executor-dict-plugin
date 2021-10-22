@@ -1,0 +1,54 @@
+OpenJDK 64-Bit Server VM 1.8.0_292-b10 on Mac OS X 10.16
+Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+lookup(n=100000,nThreads=1,dbSize=2097152,nKeys=100,refRatio=1.0,nCache=1,cacheCcLv=8):  Best Time(ms)   Avg Time(ms)   Stdev(ms)    Rate(M/s)   Per Row(ns)   Relative
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+grpc.dict                                                                                       11166          11249         118          0.0      111659.7       1.0X
+
+OpenJDK 64-Bit Server VM 1.8.0_292-b10 on Mac OS X 10.16
+Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+lookup(n=100000,nThreads=1,dbSize=2097152,nKeys=100,refRatio=1.0,nCache=100,cacheCcLv=8):  Best Time(ms)   Avg Time(ms)   Stdev(ms)    Rate(M/s)   Per Row(ns)   Relative
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+grpc.dict                                                                                          7951           8040         126          0.0       79509.8       1.0X
+
+OpenJDK 64-Bit Server VM 1.8.0_292-b10 on Mac OS X 10.16
+Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+lookup(n=100000,nThreads=1,dbSize=176160768,nKeys=3000000,refRatio=1.0,nCache=1,cacheCcLv=16):  Best Time(ms)   Avg Time(ms)   Stdev(ms)    Rate(M/s)   Per Row(ns)   Relative
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+grpc.dict                                                                                              13188          13198          14          0.0      131882.5       1.0X
+
+OpenJDK 64-Bit Server VM 1.8.0_292-b10 on Mac OS X 10.16
+Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+lookup(n=100000,nThreads=4,dbSize=176160768,nKeys=3000000,refRatio=1.0,nCache=1,cacheCcLv=16):  Best Time(ms)   Avg Time(ms)   Stdev(ms)    Rate(M/s)   Per Row(ns)   Relative
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+grpc.dict                                                                                               8364           8376          16          0.0       83643.8       1.0X
+
+OpenJDK 64-Bit Server VM 1.8.0_292-b10 on Mac OS X 10.16
+Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+lookup(n=100000,nThreads=8,dbSize=176160768,nKeys=3000000,refRatio=1.0,nCache=1,cacheCcLv=16):  Best Time(ms)   Avg Time(ms)   Stdev(ms)    Rate(M/s)   Per Row(ns)   Relative
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+grpc.dict                                                                                               8443           8479          51          0.0       84432.7       1.0X
+
+OpenJDK 64-Bit Server VM 1.8.0_292-b10 on Mac OS X 10.16
+Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+lookup(n=100000,nThreads=16,dbSize=176160768,nKeys=3000000,refRatio=1.0,nCache=1,cacheCcLv=16):  Best Time(ms)   Avg Time(ms)   Stdev(ms)    Rate(M/s)   Per Row(ns)   Relative
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+grpc.dict                                                                                                8472           8498          36          0.0       84721.5       1.0X
+
+OpenJDK 64-Bit Server VM 1.8.0_292-b10 on Mac OS X 10.16
+Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+lookup(n=100000,nThreads=16,dbSize=176160768,nKeys=3000000,refRatio=1.0,nCache=1,cacheCcLv=1):  Best Time(ms)   Avg Time(ms)   Stdev(ms)    Rate(M/s)   Per Row(ns)   Relative
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+grpc.dict                                                                                               8530           8566          51          0.0       85301.5       1.0X
+
+OpenJDK 64-Bit Server VM 1.8.0_292-b10 on Mac OS X 10.16
+Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+lookup(n=100000,nThreads=1,dbSize=176160768,nKeys=3000000,refRatio=1.0E-4,nCache=1,cacheCcLv=8):  Best Time(ms)   Avg Time(ms)   Stdev(ms)    Rate(M/s)   Per Row(ns)   Relative
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+grpc.dict                                                                                                13107          14194        1537          0.0      131071.1       1.0X
+
+OpenJDK 64-Bit Server VM 1.8.0_292-b10 on Mac OS X 10.16
+Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+lookup(n=100000,nThreads=1,dbSize=176160768,nKeys=3000000,refRatio=1.0E-4,nCache=1000,cacheCcLv=8):  Best Time(ms)   Avg Time(ms)   Stdev(ms)    Rate(M/s)   Per Row(ns)   Relative
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+grpc.dict                                                                                                    7498           7532          48          0.0       74982.7       1.0X
+

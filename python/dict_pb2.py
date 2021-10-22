@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'\n\034org.apache.spark.plugin.grpcB\010DictImplP\001\242\002\004DICT',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\ndict.proto\x12\x04grpc\"\x1c\n\rLookupRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\"\x1b\n\nValueReply\x12\r\n\x05value\x18\x01 \x01(\t29\n\x04\x44ict\x12\x31\n\x06Lookup\x12\x13.grpc.LookupRequest\x1a\x10.grpc.ValueReply\"\x00\x42\x31\n\x1corg.apache.spark.plugin.grpcB\x08\x44ictImplP\x01\xa2\x02\x04\x44ICTb\x06proto3'
+  serialized_pb=b'\n\ndict.proto\x12\x04grpc\"w\n\rLookupRequest\x12\x13\n\x06strKey\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x15\n\x08int32Key\x18\x02 \x01(\x05H\x01\x88\x01\x01\x12\x15\n\x08int64Key\x18\x03 \x01(\x03H\x02\x88\x01\x01\x42\t\n\x07_strKeyB\x0b\n\t_int32KeyB\x0b\n\t_int64Key\"\x1b\n\nValueReply\x12\r\n\x05value\x18\x01 \x01(\t29\n\x04\x44ict\x12\x31\n\x06Lookup\x12\x13.grpc.LookupRequest\x1a\x10.grpc.ValueReply\"\x00\x42\x31\n\x1corg.apache.spark.plugin.grpcB\x08\x44ictImplP\x01\xa2\x02\x04\x44ICTb\x06proto3'
 )
 
 
@@ -34,9 +34,23 @@ _LOOKUPREQUEST = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='grpc.LookupRequest.key', index=0,
+      name='strKey', full_name='grpc.LookupRequest.strKey', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='int32Key', full_name='grpc.LookupRequest.int32Key', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='int64Key', full_name='grpc.LookupRequest.int64Key', index=2,
+      number=3, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -51,9 +65,24 @@ _LOOKUPREQUEST = _descriptor.Descriptor(
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
+    _descriptor.OneofDescriptor(
+      name='_strKey', full_name='grpc.LookupRequest._strKey',
+      index=0, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
+    _descriptor.OneofDescriptor(
+      name='_int32Key', full_name='grpc.LookupRequest._int32Key',
+      index=1, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
+    _descriptor.OneofDescriptor(
+      name='_int64Key', full_name='grpc.LookupRequest._int64Key',
+      index=2, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
   ],
   serialized_start=20,
-  serialized_end=48,
+  serialized_end=139,
 )
 
 
@@ -84,10 +113,19 @@ _VALUEREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=50,
-  serialized_end=77,
+  serialized_start=141,
+  serialized_end=168,
 )
 
+_LOOKUPREQUEST.oneofs_by_name['_strKey'].fields.append(
+  _LOOKUPREQUEST.fields_by_name['strKey'])
+_LOOKUPREQUEST.fields_by_name['strKey'].containing_oneof = _LOOKUPREQUEST.oneofs_by_name['_strKey']
+_LOOKUPREQUEST.oneofs_by_name['_int32Key'].fields.append(
+  _LOOKUPREQUEST.fields_by_name['int32Key'])
+_LOOKUPREQUEST.fields_by_name['int32Key'].containing_oneof = _LOOKUPREQUEST.oneofs_by_name['_int32Key']
+_LOOKUPREQUEST.oneofs_by_name['_int64Key'].fields.append(
+  _LOOKUPREQUEST.fields_by_name['int64Key'])
+_LOOKUPREQUEST.fields_by_name['int64Key'].containing_oneof = _LOOKUPREQUEST.oneofs_by_name['_int64Key']
 DESCRIPTOR.message_types_by_name['LookupRequest'] = _LOOKUPREQUEST
 DESCRIPTOR.message_types_by_name['ValueReply'] = _VALUEREPLY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -116,8 +154,8 @@ _DICT = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=79,
-  serialized_end=136,
+  serialized_start=170,
+  serialized_end=227,
   methods=[
   _descriptor.MethodDescriptor(
     name='Lookup',

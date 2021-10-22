@@ -18,31 +18,39 @@
 package io.github.maropu
 
 import scala.collection.JavaConverters._
+import scala.reflect.{classTag, ClassTag}
 
 import org.mapdb.{DB, DBMaker, HTreeMap, Serializer}
 
 object MapDbConverter {
 
-  private def openMapDb(path: String): (DB, HTreeMap[String, String]) = {
-    val mapDb = DBMaker.fileDB(path).make()
-    val map: HTreeMap[String, String] = mapDb
-      .hashMap("map", Serializer.STRING, Serializer.STRING)
-      .create()
-    (mapDb, map)
+  private[maropu] def getKeySerializer[K: ClassTag]() = classTag[K].runtimeClass match {
+    case c: Class[_] if c == classOf[String] => Serializer.STRING
+    case c: Class[_] if c == java.lang.Integer.TYPE => Serializer.INTEGER
+    case c: Class[_] if c == java.lang.Long.TYPE => Serializer.LONG
+    case c => throw new RuntimeException(s"Unsupported type: ${c.getSimpleName}")
   }
 
-  def save(path: String, data: Map[String, String]): Unit = {
-    val (mapDb, map) = openMapDb(path)
+  private def openMapDb[K: ClassTag](path: String): (DB, HTreeMap[K, String]) = {
+    val mapDb = DBMaker.fileDB(path).make()
+    val map = mapDb
+      .hashMap("map", getKeySerializer[K](), Serializer.STRING)
+      .create()
+    (mapDb, map.asInstanceOf[HTreeMap[K, String]])
+  }
+
+  def save[K: ClassTag](path: String, data: Map[K, String]): Unit = {
+    val (mapDb, map) = openMapDb[K](path)
     map.putAll(data.asJava)
     mapDb.close()
   }
 
-  def save(path: String, data: Seq[(String, String)]): Unit = {
+  def save[K: ClassTag](path: String, data: Seq[(K, String)]): Unit = {
     save(path, data.toMap)
   }
 
-  def save(path: String, iterator: Iterator[(String, String)]): Unit = {
-    val (mapDb, map) = openMapDb(path)
+  def save[K: ClassTag](path: String, iterator: Iterator[(K, String)]): Unit = {
+    val (mapDb, map) = openMapDb[K](path)
     iterator.foreach { case (k, v) => map.put(k, v) }
     mapDb.close()
   }

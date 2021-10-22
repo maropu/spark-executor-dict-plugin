@@ -17,31 +17,80 @@
 
 package io.github.maropu
 
-import org.mapdb.{DBMaker, Serializer}
+import scala.reflect.ClassTag
+
+import org.mapdb.{DBMaker, HTreeMap, Serializer}
 
 import org.apache.spark.SparkFunSuite
 
 class MapDbConverterSuite extends SparkFunSuite {
 
-  def testSaveFunc(save: (String, Map[String, String]) => Unit): Unit = {
+  def testSaveFunc[K: ClassTag](saveAndGetTestData: String => Map[K, String]): Unit = {
     withTempDir { tempDir =>
       val dbPath = s"${tempDir.getAbsolutePath}/test.db"
-      val data = Map("1" -> "a", "2" -> "b")
-      save(dbPath, data)
+      val expectedMap = saveAndGetTestData(dbPath)
       val mapDb = DBMaker.fileDB(dbPath).readOnly().make()
       val map = mapDb
-        .hashMap("map", Serializer.STRING, Serializer.STRING)
-        .open()
-      assert(map.get("1") === "a")
-      assert(map.get("2") === "b")
-      assert(map.get("3") === null)
+        .hashMap("map", MapDbConverter.getKeySerializer[K](), Serializer.STRING)
+        .open().asInstanceOf[HTreeMap[K, String]]
+      expectedMap.foreach { case (k, v) =>
+        assert(map.get(k) === v)
+      }
       mapDb.close()
     }
   }
 
-  test("save") {
-    testSaveFunc { case (dbPath, data) => MapDbConverter.save(dbPath, data) }
-    testSaveFunc { case (dbPath, data) => MapDbConverter.save(dbPath, data.toSeq) }
-    testSaveFunc { case (dbPath, data) => MapDbConverter.save(dbPath, data.toIterator) }
+  test("save - string key") {
+    testSaveFunc { dbPath =>
+      val data = Map("1" -> "a", "2" -> "b")
+      MapDbConverter.save(dbPath, data)
+      data
+    }
+    testSaveFunc { dbPath =>
+      val data = Map("3" -> "c", "4" -> "d", "5" -> "e")
+      MapDbConverter.save(dbPath, data.toSeq)
+      data
+    }
+    testSaveFunc { dbPath =>
+      val data = Map("6" -> "f", "7" -> "g")
+      MapDbConverter.save(dbPath, data.toIterator)
+      data
+    }
+  }
+
+  test("save - int key") {
+    testSaveFunc { dbPath =>
+      val data = Map(1 -> "a", 2 -> "b")
+      MapDbConverter.save(dbPath, data)
+      data
+    }
+    testSaveFunc { dbPath =>
+      val data = Map(3 -> "c", 4 -> "d", 5 -> "e")
+      MapDbConverter.save(dbPath, data.toSeq)
+      data
+    }
+    testSaveFunc { dbPath =>
+      val data = Map(6 -> "f", 7 -> "g")
+      MapDbConverter.save(dbPath, data.toIterator)
+      data
+    }
+  }
+
+  test("save - long key") {
+    testSaveFunc { dbPath =>
+      val data = Map(1L -> "a", 2L -> "b")
+      MapDbConverter.save(dbPath, data)
+      data
+    }
+    testSaveFunc { dbPath =>
+      val data = Map(3L -> "c", 4L -> "d", 5L -> "e")
+      MapDbConverter.save(dbPath, data.toSeq)
+      data
+    }
+    testSaveFunc { dbPath =>
+      val data = Map(6L -> "f", 7L -> "g")
+      MapDbConverter.save(dbPath, data.toIterator)
+      data
+    }
   }
 }

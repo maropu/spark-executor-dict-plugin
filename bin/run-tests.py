@@ -32,7 +32,11 @@ import queue as Queue
 from multiprocessing import Manager
 
 
-python_test_goals = ["tests.test_dict"]
+python_test_goals = [
+    "tests.test_string_key_dict",
+    "tests.test_int_key_dict",
+    "tests.test_long_key_dict"
+]
 
 
 def print_red(text):

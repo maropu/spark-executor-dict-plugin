@@ -11,8 +11,7 @@ If a shared state is small, a broadcast variable is a good fit for the case as f
 >>> @udf(returnType='string')
 ... def udf(x):
 ...     hmap = broadcasted_hmap.value
-...     value = ...  # Computes a value by referring to the broadcasted dict like 'hmap[x]'
-...     return value
+...     return hmap[x]
 ...
 >>> import pandas as pd
 >>> df = spark.createDataFrame(pd.DataFrame({'x': ['key1', 'key2']}))
@@ -35,7 +34,7 @@ How a user accesses a shared state via a RPC server is as follows:
 
 ```
 # 'largeMap.db' is a MapDB file-backed hash map implementation, https://mapdb.org
-$ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.0-0.1.0-SNAPSHOT-with-dependencies.jar \
+$ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.1-0.1.0-SNAPSHOT-with-dependencies.jar \
   --py-files ./assembly/dict.zip \
   --conf spark.plugins=org.apache.spark.plugin.SparkExecutorDictPlugin \
   --conf spark.files=/tmp/largeMap.db
@@ -45,9 +44,7 @@ $ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.0-0.1.0-SNAPS
 ... def udf(x):
 ...     from client import DictClient
 ...     hmap = DictClient()
-...     value = ...  # Computes a value by talking to an executor-attached RPC map server
-...                  # like 'hmap.lookup(x)'
-...     return value
+...     return hmap.lookup(x)
 ...
 >>> import pandas as pd
 >>> df = spark.createDataFrame(pd.DataFrame({'x': ['key1', 'key2']}))
@@ -70,11 +67,49 @@ For actual running examples, please see [test code](./python/tests/test_dict.py)
 To generate a MapDB's map file for your data, you can use a helper function included in the package:
 
 ```
-$ spark-shell --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.0-0.1.0-SNAPSHOT-with-dependencies.jar
+$ spark-shell --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.1-0.1.0-SNAPSHOT-with-dependencies.jar
 
 scala> import io.github.maropu.MapDbConverter
 scala> val largeMap = Map("key1" -> "value1", "key2" -> "value2", ...)
 scala> MapDbConverter.save("/tmp/largeMap.db", largeMap)
+```
+
+## Fixed-length lookup key
+
+You can use fixed-length key types (`int`/`long`) in map data instead of a variable-length `string` one.
+How one uses `long` keys in map data is as folows:
+
+```
+# Generate MapDB's map data whose key type is `long`
+scala> import io.github.maropu.MapDbConverter
+scala> val longKeyMap = Map(1L -> "value1", 2L -> "value2", ...)
+scala> MapDbConverter.save("/tmp/longKeyMap.db", longKeyMap)
+
+# To load the generated map data above, you need to set `long`
+# to `spark.plugins.executorDict.keyType`
+$ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.1-0.1.0-SNAPSHOT-with-dependencies.jar \
+  --py-files ./assembly/dict.zip \
+  --conf spark.plugins=org.apache.spark.plugin.SparkExecutorDictPlugin \
+  --conf spark.files=/tmp/longKeyMap.db \
+  --conf spark.plugins.executorDict.keyType=long
+
+>>> from pyspark.sql.functions import udf
+>>> @udf(returnType='string')
+... def udf(x):
+...     from client import DictClient
+...     hmap = DictClient()
+...     return hmap.lookup(x)
+...
+>>> import pandas as pd
+>>> df = spark.createDataFrame(pd.DataFrame({'x': [1, 2]}))
+>>> df = df.select(udf("x"))
+>>> df.show()
++------+
+|udf(x)|
++------+
+|value1|
+|value2|
++------+
 ```
 
 ### Configurations
@@ -84,6 +119,8 @@ scala> MapDbConverter.save("/tmp/largeMap.db", largeMap)
 | spark.plugins.executorDict.dbFile | "" | Absolute path of a MapDB's loadable file in an executor's instance. If not specified, the plugin automatically detects it in the working directory of each executor. |
 | spark.plugins.executorDict.port | 6543 | Default port number for a RPC dict server in an executor. |
 | spark.plugins.executorDict.mapCacheSize | 10000 | Maximum number of cache entries for a shared dict. |
+| spark.plugins.executorDict.keyType | "string" | Key type of a specified database file. This value must be one of string/int/long. |
+| spark.plugins.executorDict.mapKeyTypeCheckEnabled | true | Specifies whether an exception is thrown if an incompatible lookup key detected. |
 
 ## TODO
 

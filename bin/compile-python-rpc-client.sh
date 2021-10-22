@@ -26,5 +26,6 @@ python3 -m grpc_tools.protoc \
   -I${ROOT_DIR}/src/main/proto \
   --python_out=. \
   --grpc_python_out=. \
+  --experimental_allow_proto3_optional \
   ${ROOT_DIR}/src/main/proto/dict.proto
 

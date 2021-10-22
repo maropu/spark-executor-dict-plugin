@@ -26,7 +26,9 @@ service Dict {
 }
 
 message LookupRequest {
-  string key = 1;
+  optional string strKey = 1;
+  optional int32 int32Key = 2;
+  optional int64 int64Key = 3;
 }
 
 message ValueReply {
