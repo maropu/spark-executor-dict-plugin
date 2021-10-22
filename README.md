@@ -34,7 +34,7 @@ How a user accesses a shared state via a RPC server is as follows:
 
 ```
 # 'largeMap.db' is a MapDB file-backed hash map implementation, https://mapdb.org
-$ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.1-0.1.0-SNAPSHOT-with-dependencies.jar \
+$ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.2-0.1.0-SNAPSHOT-with-dependencies.jar \
   --py-files ./assembly/dict.zip \
   --conf spark.plugins=org.apache.spark.plugin.SparkExecutorDictPlugin \
   --conf spark.files=/tmp/largeMap.db
@@ -67,7 +67,7 @@ For actual running examples, please see [test code](./python/tests/test_dict.py)
 To generate a MapDB's map file for your data, you can use a helper function included in the package:
 
 ```
-$ spark-shell --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.1-0.1.0-SNAPSHOT-with-dependencies.jar
+$ spark-shell --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.2-0.1.0-SNAPSHOT-with-dependencies.jar
 
 scala> import io.github.maropu.MapDbConverter
 scala> val largeMap = Map("key1" -> "value1", "key2" -> "value2", ...)
@@ -87,7 +87,7 @@ scala> MapDbConverter.save("/tmp/longKeyMap.db", longKeyMap)
 
 # To load the generated map data above, you need to set `long`
 # to `spark.plugins.executorDict.keyType`
-$ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.1-0.1.0-SNAPSHOT-with-dependencies.jar \
+$ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.2-0.1.0-SNAPSHOT-with-dependencies.jar \
   --py-files ./assembly/dict.zip \
   --conf spark.plugins=org.apache.spark.plugin.SparkExecutorDictPlugin \
   --conf spark.files=/tmp/longKeyMap.db \

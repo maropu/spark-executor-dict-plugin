@@ -5,7 +5,7 @@ channels:
   - defaults
 dependencies:
   - python=3.6.8
-  - pyspark=3.1.2
+  - pyspark=3.2.0
   - pyarrow=1.0.0
   - grpcio=1.35.0
   - grpcio-tools=1.35.0
