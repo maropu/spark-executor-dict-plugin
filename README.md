@@ -116,7 +116,7 @@ $ pyspark --jars=./assembly/spark-executor-dict-plugin_2.12_spark3.2-0.1.0-SNAPS
 
 | Property Name | Default | Meaning |
 | ---- | ---- | ---- |
-| spark.plugins.executorDict.dbFile | "" | Absolute path of a MapDB's loadable file in an executor's instance. If not specified, the plugin automatically detects it in the working directory of each executor. |
+| spark.plugins.executorDict.dbFile | "" | Absolute path of a MapDB's loadable file in executor's instances. If not specified, you must pass it via `spark.files` instead. |
 | spark.plugins.executorDict.port | 6543 | Default port number for a RPC dict server in an executor. |
 | spark.plugins.executorDict.mapCacheSize | 10000 | Maximum number of cache entries for a shared dict. |
 | spark.plugins.executorDict.keyType | "string" | Key type of a specified database file. This value must be one of string/int/long. |
