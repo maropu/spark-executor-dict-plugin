@@ -48,6 +48,25 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     val key = "spark.plugins.executorDict.dbFile"
     val plugin = new SparkExecutorDictPlugin()
     val conf = new SparkConf()
+
+    val errMsg1 = intercept[IllegalStateException] {
+      plugin.dbPath(conf)
+    }.getMessage
+    assert(errMsg1.contains("`spark.files` must contain .db file"))
+
+    val errMsg2 = intercept[IllegalStateException] {
+      conf.set("spark.files", "non-existent")
+      plugin.dbPath(conf)
+    }.getMessage
+    assert(errMsg2.contains("`spark.files` must contain a single .db file, but got:"))
+
+    val errMsg3 = intercept[IllegalStateException] {
+      conf.set("spark.files", resourcePath("invalid.db"))
+      plugin.dbPath(conf)
+    }.getMessage
+    assert(errMsg3.contains("`spark.files` must contain a single .db file, but got:"))
+
+    conf.set("spark.files", resourcePath("string_key_dict.db"))
     assert(plugin.dbPath(conf) === "")
     conf.set(key, "dbfile")
     assert(plugin.dbPath(conf) === "dbfile")
@@ -60,12 +79,12 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     assert(plugin.port(conf) === "6543")
     conf.set(key, "6544")
     assert(plugin.port(conf) === "6544")
-    val errMsg1 = intercept[RuntimeException] {
+    val errMsg1 = intercept[IllegalStateException] {
       plugin.port(conf.set(key, "xxx"))
     }.getMessage
     assert(errMsg1.contains("`spark.plugins.executorDict.port` " +
       "must be a positive number, but: xxx"))
-    val errMsg2 = intercept[RuntimeException] {
+    val errMsg2 = intercept[IllegalStateException] {
       plugin.port(conf.set(key, "-1"))
     }.getMessage
     assert(errMsg2.contains("`spark.plugins.executorDict.port` " +
@@ -82,7 +101,7 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
       conf.set(key, tpeName)
       assert(plugin.keyType(conf) === tpeName.toLowerCase(Locale.ROOT))
     }
-    val errMsg = intercept[RuntimeException] {
+    val errMsg = intercept[IllegalStateException] {
       plugin.keyType(conf.set(key, "xxx"))
     }.getMessage
     assert(errMsg.contains("`spark.plugins.executorDict.keyType` " +
@@ -96,12 +115,12 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     assert(plugin.mapCacheSize(conf) === "10000")
     conf.set(key, "300")
     assert(plugin.mapCacheSize(conf) === "300")
-    val errMsg1 = intercept[RuntimeException] {
+    val errMsg1 = intercept[IllegalStateException] {
       plugin.mapCacheSize(conf.set(key, "xxx"))
     }.getMessage
     assert(errMsg1.contains("`spark.plugins.executorDict.mapCacheSize` " +
       "must be a positive number, but: xxx"))
-    val errMsg2 = intercept[RuntimeException] {
+    val errMsg2 = intercept[IllegalStateException] {
       plugin.mapCacheSize(conf.set(key, "-1"))
     }.getMessage
     assert(errMsg2.contains("`spark.plugins.executorDict.mapCacheSize` " +
@@ -115,12 +134,12 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     assert(plugin.mapCacheConcurrencyLv(conf) === "8")
     conf.set(key, "30")
     assert(plugin.mapCacheConcurrencyLv(conf) === "30")
-    val errMsg1 = intercept[RuntimeException] {
+    val errMsg1 = intercept[IllegalStateException] {
       plugin.mapCacheConcurrencyLv(conf.set(key, "xxx"))
     }.getMessage
     assert(errMsg1.contains("`spark.plugins.executorDict.mapCacheConcurrencyLv` " +
       "must be a positive number, but: xxx"))
-    val errMsg2 = intercept[RuntimeException] {
+    val errMsg2 = intercept[IllegalStateException] {
       plugin.mapCacheConcurrencyLv(conf.set(key, "-1"))
     }.getMessage
     assert(errMsg2.contains("`spark.plugins.executorDict.mapCacheConcurrencyLv` " +
@@ -243,7 +262,7 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     val errMsg = intercept[RuntimeException] {
       sc = new SparkContext(conf)
     }.getMessage
-    assert(errMsg.contains("Cannot open a specified database"))
+    assert(errMsg.contains("`spark.files` must contain a single .db file, but got:"))
   }
 
   // scalastyle:off line.size.limit
@@ -280,7 +299,7 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
     val errMsg = intercept[RuntimeException] {
       sc = new SparkContext(conf)
     }.getMessage
-    assert(errMsg.contains("No db file found"))
+    assert(errMsg.contains("`spark.files` must contain .db file"))
   }
 
   test(s"config: ${DictPluginConf.EXECUTOR_DICT_PORT}") {
