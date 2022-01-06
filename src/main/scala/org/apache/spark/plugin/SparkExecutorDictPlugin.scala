@@ -31,6 +31,7 @@ import org.apache.spark.{SparkConf, SparkContext, SparkEnv, SparkFiles}
 import org.apache.spark.api.plugin.{DriverPlugin, ExecutorPlugin, PluginContext, SparkPlugin}
 import org.apache.spark.internal.Logging
 import org.apache.spark.plugin.grpc.DictServer
+import org.apache.spark.util.Utils
 
 object SparkExecutorDictPlugin extends Logging {
 
@@ -55,19 +56,34 @@ object SparkExecutorDictPlugin extends Logging {
     case c => throw new IllegalStateException(s"Unsupported type: ${c.getSimpleName}")
   }
 
-  private def openAndGetMap[K: ClassTag](dbPath: String): K => String = try {
-    val mapDb = DBMaker.fileDB(dbPath).readOnly().closeOnJvmShutdown().make()
+  private def openMapDb[K: ClassTag](dbPath: String) = {
     // Since MapDB `hashMap` uses a tree structure internally, the data reads
     // can be slower than those of a memory-based hash map. So, we should
     // cache frequently-accessed items for fast lookup.
     // - https://jankotek.gitbooks.io/mapdb/content/htreemap/
     //
     // TODO: What if key type differs between db file and specified key serializer?
-    val map = mapDb
-      .hashMap("map", getKeySerializer[K](), Serializer.STRING)
-      .open()
+    val mapDb = DBMaker.fileDB(dbPath).readOnly().closeOnJvmShutdown().make()
+    mapDb.hashMap("map", getKeySerializer[K](), Serializer.STRING).open()
+  }
 
-    (key: K) => map.get(key)
+  private[plugin] def isDbFile(dbPath: String, keyType: String): Boolean = try {
+    val mapDb = keyType match {
+      case "string" => openMapDb[String](dbPath)
+      case "int" => openMapDb[Int](dbPath)
+      case "long" => openMapDb[Long](dbPath)
+      case t => throw new IllegalStateException(s"Unsupported type: $t")
+    }
+    mapDb.close()
+    true
+  } catch {
+    case NonFatal(_) =>
+      false
+  }
+
+  private def openAndGetMap[K: ClassTag](dbPath: String): K => String = try {
+    val mapDb = openMapDb(dbPath)
+    (key: K) => mapDb.get(key)
   } catch {
     case NonFatal(_) =>
       throw new RuntimeException(s"Cannot open a specified database: $dbPath")
@@ -132,7 +148,26 @@ object DictPluginConf {
 class SparkExecutorDictPlugin extends SparkPlugin with Logging {
 
   private[plugin] def dbPath(conf: SparkConf) = {
-    conf.get(DictPluginConf.EXECUTOR_DICT_DB_FILE, "")
+    val dbPath = conf.get(DictPluginConf.EXECUTOR_DICT_DB_FILE, "")
+    if (dbPath.isEmpty) {
+      val sparkFiles = conf.get("spark.files", null)
+      if (sparkFiles == null) {
+        throw new IllegalStateException("`spark.files` must contain .db file")
+      }
+      val dbFile = Utils.stringToSeq(sparkFiles)
+        .filter(_.endsWith(".db")).map(Utils.resolveURI(_).getPath)
+      if (dbFile.length != 1 ||
+          !SparkExecutorDictPlugin.isDbFile(dbFile.head, keyType(conf))) {
+        throw new IllegalStateException(
+          s"`spark.files` must contain a single .db file, but got: " +
+            dbFile.mkString(","))
+      }
+      ""
+    } else {
+      logWarning("Makes sure that all the executor hosts " +
+        s"have the valid specified path: $dbPath")
+      dbPath
+    }
   }
 
   private[plugin] def port(conf: SparkConf) = {
