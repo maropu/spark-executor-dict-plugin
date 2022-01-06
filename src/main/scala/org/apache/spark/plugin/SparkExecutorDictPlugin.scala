@@ -18,6 +18,7 @@
 package org.apache.spark.plugin
 
 import java.io.File
+import java.net.{InetAddress, ServerSocket}
 import java.util
 
 import scala.reflect.{classTag, ClassTag}
@@ -26,7 +27,7 @@ import scala.util.control.NonFatal
 
 import org.mapdb.{DBMaker, Serializer}
 
-import org.apache.spark.{SparkConf, SparkContext, SparkFiles}
+import org.apache.spark.{SparkConf, SparkContext, SparkEnv, SparkFiles}
 import org.apache.spark.api.plugin.{DriverPlugin, ExecutorPlugin, PluginContext, SparkPlugin}
 import org.apache.spark.internal.Logging
 import org.apache.spark.plugin.grpc.DictServer
@@ -89,6 +90,13 @@ object SparkExecutorDictPlugin extends Logging {
       case "long" => createServ[Long]()
       case t => throw new IllegalStateException(s"Unsupported type: $t")
     }
+  }
+
+  private[plugin] def isPortInUse(port: Int): Boolean = try {
+    new ServerSocket(port, 0, InetAddress.getByName("localhost")).close()
+    false
+  } catch {
+    case NonFatal(_) => true
   }
 
   private[plugin] def initRpcServ(conf: util.Map[String, String]): DictServer = {
@@ -196,16 +204,30 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
     new ExecutorPlugin() {
       var rpcServ: DictServer = _
 
-      override def init(ctx: PluginContext, extraConf: util.Map[String, String]): Unit = {
-        rpcServ = SparkExecutorDictPlugin.initRpcServ(extraConf)
-        super.init(ctx, extraConf)
+      private def giveUpMsg(port: Int) = {
+        s"executor-${SparkEnv.get.executorId} gave up starting up " +
+          s"${DictServer.getClass.getSimpleName} due to the port '$port' already in use"
       }
 
-      override def shutdown(): Unit = try {
-        rpcServ.shutdown()
-      } catch {
-        case NonFatal(e) =>
-          logWarning(s"Cannot shutdown gracefully because: ${e.getMessage}")
+      override def init(ctx: PluginContext, extraConf: util.Map[String, String]): Unit = {
+        val port = extraConf.get("port").toInt
+        if (!SparkExecutorDictPlugin.isPortInUse(port)) {
+          rpcServ = Try(SparkExecutorDictPlugin.initRpcServ(extraConf)).getOrElse {
+            logInfo(giveUpMsg(port))
+            null
+          }
+        } else {
+          logInfo(giveUpMsg(port))
+        }
+      }
+
+      override def shutdown(): Unit = if (rpcServ != null) {
+        try {
+          rpcServ.shutdown()
+        } catch {
+          case NonFatal(e) =>
+            logWarning(s"Cannot shutdown gracefully because: ${e.getMessage}")
+        }
       }
     }
   }

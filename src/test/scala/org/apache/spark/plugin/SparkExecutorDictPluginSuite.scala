@@ -32,6 +32,14 @@ import org.apache.spark.plugin.grpc.{BaseDictClient, DictClient, DictServer}
 
 class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext {
 
+  override def afterEach(): Unit = {
+    try {
+      TestSparkExecutorDictPlugin.testSparkExecutorPlugin = null
+    } finally {
+      super.afterEach()
+    }
+  }
+
   def resourcePath(f: String): String = {
     Thread.currentThread().getContextClassLoader.getResource(f).getPath
   }
@@ -148,12 +156,12 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
   test("plugin initialization - cluster") {
     val conf = new SparkConf()
       .setAppName(getClass.getName)
-      .set(SparkLauncher.SPARK_MASTER, "local-cluster[1,4,1024]")
+      .set(SparkLauncher.SPARK_MASTER, "local-cluster[4,1,1024]")
       .set("spark.plugins", classOf[TestSparkExecutorDictPlugin].getName)
       .set("spark.files", resourcePath("string_key_dict.db"))
 
     sc = new SparkContext(conf)
-    assert(TestSparkExecutorDictPlugin.testSparkExecutorPlugin != null)
+    assert(TestSparkExecutorDictPlugin.testSparkExecutorPlugin == null)
 
     val rdd = sc.makeRDD(Seq("1", "2", "3", "4"), numSlices = 4)
     val resultRdd = rdd.map { key =>
@@ -161,6 +169,7 @@ class SparkExecutorDictPluginSuite extends SparkFunSuite with LocalSparkContext 
       client.lookup(key)
     }
     assert(resultRdd.collect().toSet === Set("a", "b", "c", ""))
+    assert(sc.getExecutorIds().length === 4)
   }
 
   def testMultipleClients[K: ClassTag](testData: Map[K, String]): Unit = {
