@@ -1,6 +1,8 @@
 [![License](http://img.shields.io/:license-Apache_v2-blue.svg)](https://github.com/maropu/spark-executor-dict-plugin/blob/master/LICENSE)
 [![Build and test](https://github.com/maropu/spark-executor-dict-plugin/workflows/Build%20and%20test/badge.svg)](https://github.com/maropu/spark-executor-dict-plugin/actions?query=workflow%3A%22Build+and+test%22)
 
+**This branch is no longer maintained.**
+
 This repository provides a Spark plugin implementation for executor-side RPC dict servers where a user can look up values with associated keys.
 There is the use case where a user wants to compute values in a map task by referring to a static shared state (e.g., a pre-built knowledge base and master data).
 If a shared state is small, a broadcast variable is a good fit for the case as follows:
