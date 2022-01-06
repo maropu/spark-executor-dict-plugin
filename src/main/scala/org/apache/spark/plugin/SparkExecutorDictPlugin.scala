@@ -138,7 +138,7 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
   private[plugin] def port(conf: SparkConf) = {
     val port = conf.get(DictPluginConf.EXECUTOR_DICT_PORT, SparkExecutorDictPlugin.DEFAULT_PORT)
     if (Try(port.toInt).isFailure || port.toInt <= 0) {
-      throw new RuntimeException(s"`${DictPluginConf.EXECUTOR_DICT_PORT}` " +
+      throw new IllegalStateException(s"`${DictPluginConf.EXECUTOR_DICT_PORT}` " +
         s"must be a positive number, but: $port")
     }
     port
@@ -149,7 +149,7 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
     val keyType = conf.get(DictPluginConf.EXECUTOR_DICT_MAP_KEY_TYPE, "string")
       .toLowerCase(util.Locale.ROOT)
     if (!expectedKeyTypes.contains(keyType)) {
-      throw new RuntimeException(s"`${DictPluginConf.EXECUTOR_DICT_MAP_KEY_TYPE}` " +
+      throw new IllegalStateException(s"`${DictPluginConf.EXECUTOR_DICT_MAP_KEY_TYPE}` " +
         s"must be one of ${expectedKeyTypes.mkString("/")}, but: $keyType")
     }
     keyType
@@ -158,7 +158,7 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
   private[plugin] def mapCacheSize(conf: SparkConf) = {
     val mapCacheSize = conf.get(DictPluginConf.EXECUTOR_DICT_MAP_CACHE_SIZE, "10000")
     if (Try(mapCacheSize.toInt).isFailure || mapCacheSize.toInt <= 0) {
-      throw new RuntimeException(s"`${DictPluginConf.EXECUTOR_DICT_MAP_CACHE_SIZE}` " +
+      throw new IllegalStateException(s"`${DictPluginConf.EXECUTOR_DICT_MAP_CACHE_SIZE}` " +
         s"must be a positive number, but: $mapCacheSize")
     }
     mapCacheSize
@@ -168,7 +168,8 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
     val mapCacheConcurrencyLv = conf.get(
       DictPluginConf.EXECUTOR_DICT_MAP_CACHE_CONCURRENCY_LEVEL, "8")
     if (Try(mapCacheConcurrencyLv.toInt).isFailure || mapCacheConcurrencyLv.toInt <= 0) {
-      throw new RuntimeException(s"`${DictPluginConf.EXECUTOR_DICT_MAP_CACHE_CONCURRENCY_LEVEL}` " +
+      throw new IllegalStateException(
+        s"`${DictPluginConf.EXECUTOR_DICT_MAP_CACHE_CONCURRENCY_LEVEL}` " +
         s"must be a positive number, but: $mapCacheConcurrencyLv")
     }
     mapCacheConcurrencyLv
@@ -178,7 +179,8 @@ class SparkExecutorDictPlugin extends SparkPlugin with Logging {
     val mapKeyTypeCheckEnabled = conf.get(
       DictPluginConf.EXECUTOR_DICT_MAP_KEY_TYPE_CHECK_ENABLED, "true")
     if (Try(mapKeyTypeCheckEnabled.toBoolean).isFailure) {
-      throw new RuntimeException(s"`${DictPluginConf.EXECUTOR_DICT_MAP_KEY_TYPE_CHECK_ENABLED}` " +
+      throw new IllegalStateException(
+        s"`${DictPluginConf.EXECUTOR_DICT_MAP_KEY_TYPE_CHECK_ENABLED}` " +
         s"must be boolean, but: $mapKeyTypeCheckEnabled")
     }
     mapKeyTypeCheckEnabled
